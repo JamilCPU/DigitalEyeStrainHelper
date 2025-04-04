@@ -1,0 +1,9 @@
+{
+    "reminder_interval": 1200,
+    "reminder_message": "Look 20 feet away for 20 seconds!",
+    "reminder_sound": "default",
+    "reminder_notification": "default",
+    "reminder_popup": "default",
+    "reminder_popup_duration": 10,
+    "reminder_popup_color": "#000000"
+}

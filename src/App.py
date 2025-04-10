@@ -1,18 +1,19 @@
 import tkinter as tk
+from tkinter import ttk
 from tkinter import messagebox
 import time
 import threading
-import psutil
 import logging
 from plyer import notification
-from PIL import Image, ImageTk
+from PIL import Image
 import pystray
+import Utilities
 
 logging.basicConfig(filename="eye_strain.log", level=logging.INFO,
                     format="%(asctime)s - %(levelname)s - %(message)s")
 
 def notify_user(title, message):
-    """Send a system notification."""
+    """Notification to the user"""
     notification.notify(
         title=title,
         message=message,
@@ -27,22 +28,37 @@ class EyeCareApp:
         self.root.title("Digital Eye Strain Helper")
         self.root.geometry("400x300")
 
+        notebook = ttk.Notebook(root)
+        home = tk.Frame(notebook)
+        settings = tk.Frame(notebook)
+        notebook.add(home, text="Home")
+        notebook.add(settings, text="Settings")
+        notebook.pack(expand=1, fill="both")
         # UI Elements
-        self.label = tk.Label(root, text="Eye Care Reminder", font=("Arial", 14))
-        self.label.pack(pady=10)
+        self.title = ttk.Label(home, text="Eye Care Reminder", font=("Arial", 14))
+        self.title.pack(pady=10)
+        self.reminderBtn = ttk.Button(home, text="Start 20-20-20 Reminder", command=self.start_reminder)
+        self.reminderBtn.pack(pady=10)
 
-        self.reminder_btn = tk.Button(root, text="Start 20-20-20 Reminder", command=self.start_reminder)
-        self.reminder_btn.pack(pady=10)
+        self.settingsTitle = ttk.Label(settings, text="Settings", font=("Arial", 14))
+        self.settingsTitle.pack(pady=10)
 
-        self.close_btn = tk.Button(root, text="Exit", command=self.exit_app)
-        self.close_btn.pack(pady=10)
+        self.reminderTime = ttk.Label(settings, text="Reminder Wait Time", font=("Arial", 14))
+        self.checkValidIntegerAndBelow60Minutes = self.root.register(Utilities.validateIsIntegerAndBelow60Minutes)
+        self.reminderTime.pack(pady=10)
+        self.reminderTimeVar = tk.IntVar(value=20)
+        self.reminderTimeEntry = ttk.Entry(settings, textvariable=self.reminderTimeVar, validate="key", validatecommand=(self.checkValidIntegerAndBelow60Minutes, "%P"))
+        self.reminderTimeEntry.pack(pady=10)
+        self.playSound = tk.BooleanVar()
+        self.soundToggle = ttk.Checkbutton(settings, text="Play a Sound on Reminder", variable=self.playSound)
+        self.soundToggle.pack(pady=10)
 
         self.setup_tray_icon()
 
     def start_reminder(self):
         """Start the 20-20-20 rule reminder in a separate thread."""
         threading.Thread(target=self.reminder_loop, daemon=True).start()
-        messagebox.showinfo("Reminder Started", "A notification will be sent every 20 minutes.")
+        tk.messagebox.showinfo("Reminder Started", "A notification will be sent every 20 minutes.")
         logging.info("20-20-20 reminder started.")
 
     def reminder_loop(self):

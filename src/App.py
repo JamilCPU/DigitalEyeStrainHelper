@@ -8,11 +8,13 @@ from plyer import notification
 from PIL import Image
 import pystray
 import Utilities
+import os
+from PIL import Image
 
 logging.basicConfig(filename="eye_strain.log", level=logging.INFO,
                     format="%(asctime)s - %(levelname)s - %(message)s")
 
-def notify_user(title, message):
+def notifyUser(title, message):
     """Notification to the user"""
     notification.notify(
         title=title,
@@ -26,64 +28,134 @@ class EyeCareApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Digital Eye Strain Helper")
-        self.root.geometry("400x300")
+        self.root.geometry("400x550")
 
         notebook = ttk.Notebook(root)
-        home = tk.Frame(notebook)
-        settings = tk.Frame(notebook)
-        notebook.add(home, text="Home")
-        notebook.add(settings, text="Settings")
+        self.home = tk.Frame(notebook)
+        self.settings = tk.Frame(notebook)
+        notebook.add(self.home, text="Home")
+        notebook.add(self.settings, text="Settings")
         notebook.pack(expand=1, fill="both")
-        # UI Elements
-        self.title = ttk.Label(home, text="Eye Care Reminder", font=("Arial", 14))
+        # Home Page
+        self.title = ttk.Label(self.home, text="Eye Care Reminder", font=("Arial", 14))
         self.title.pack(pady=10)
-        self.reminderBtn = ttk.Button(home, text="Start 20-20-20 Reminder", command=self.start_reminder)
+
+        self.reminderRunning = tk.BooleanVar()
+        self.reminderRunning.set(False)
+        self.reminderBtn = ttk.Button(self.home, text="Start Reminder", command=lambda: self.startReminder())
         self.reminderBtn.pack(pady=10)
 
-        self.settingsTitle = ttk.Label(settings, text="Settings", font=("Arial", 14))
+        self.stopReminderBtn = ttk.Button(self.home, text="Stop Reminder", command=lambda: self.stopReminder())
+
+
+
+        # Settings Page
+        self.detectActivity = tk.BooleanVar()
+        #self.detectActivity.set(0) update this to whatever value the user has set in their cached settings
+        
+        self.detectActivity.trace_add("write", self.listenForActivity)
+        self.detectActivityToggle = ttk.Checkbutton(self.settings, text="Automatically start reminder when activity is detected", variable=self.detectActivity, command=lambda: Utilities.detectActivity(self))
+        self.detectActivityToggle.pack(pady=10)
+
+        self.settingsTitle = ttk.Label(self.settings, text="Settings", font=("Arial", 14))
         self.settingsTitle.pack(pady=10)
 
-        self.reminderTime = ttk.Label(settings, text="Reminder Wait Time", font=("Arial", 14))
+        self.reminderTime = ttk.Label(self.settings, text="Reminder Wait Time", font=("Arial", 14))
         self.checkValidIntegerAndBelow60Minutes = self.root.register(Utilities.validateIsIntegerAndBelow60Minutes)
         self.reminderTime.pack(pady=10)
+
         self.reminderTimeVar = tk.IntVar(value=20)
-        self.reminderTimeEntry = ttk.Entry(settings, textvariable=self.reminderTimeVar, validate="key", validatecommand=(self.checkValidIntegerAndBelow60Minutes, "%P"))
+        self.reminderTimeEntry = ttk.Entry(self.settings, textvariable=self.reminderTimeVar, validate="key", validatecommand=(self.checkValidIntegerAndBelow60Minutes, "%P"))
         self.reminderTimeEntry.pack(pady=10)
+
+        self.reminderMessageLabel = ttk.Label(self.settings, text="Reminder Message", font=("Arial", 14))
+        self.reminderMessageLabel.pack(pady=10)
+
+        self.reminderMessageText = tk.StringVar()
+        self.reminderMessageText.set("20 minutes have passed. Look 20 feet away for 20 seconds!")
+        self.reminderMessage = ttk.Label(self.settings, textvariable=self.reminderMessageText)
+        self.reminderMessage.pack(pady=10)
+
         self.playSound = tk.BooleanVar()
-        self.soundToggle = ttk.Checkbutton(settings, text="Play a Sound on Reminder", variable=self.playSound)
+        self.soundToggle = ttk.Checkbutton(self.settings, text="Play a Sound on Reminder", variable=self.playSound)
         self.soundToggle.pack(pady=10)
 
-        self.setup_tray_icon()
+ 
+        self.uploadedSounds = [], []
+        self.currentSound = tk.StringVar()
+        if len(self.uploadedSounds[0]) > 0:
+            self.currentSound.set(self.uploadedSounds[0][0])
+        else:
+            self.currentSound.set("No sound has been selected.")
 
-    def start_reminder(self):
+        self.currentSoundLabel = ttk.Label(self.settings, textvariable=self.currentSound)
+        self.currentSoundLabel.pack(pady=10)
+
+        self.deleteCurrentSound = ttk.Button(self.settings, text="Delete Current Sound", command=lambda: Utilities.deleteCurrentSound(self))
+        self.deleteCurrentSound.pack(pady=10)
+
+        self.uploadButton = ttk.Button(self.settings, text="Upload Sound", command=lambda: Utilities.uploadSound(self))
+        self.uploadButton.pack(pady=10)
+
+        self.uploadedSoundsMenu = ttk.Combobox(self.settings, values=self.uploadedSounds[0])
+        if len(self.uploadedSounds[0]) == 0:
+            self.uploadedSoundsMenu.state(['disabled'])
+        else:
+            self.uploadedSoundsMenu.state(['!disabled'])
+        self.uploadedSoundsMenu.pack(pady=10)
+
+        self.setSound = ttk.Button(self.settings, text="Set Sound", command=lambda: Utilities.setSound(self, self.uploadedSoundsMenu.get()))
+        self.setSound.pack(pady=10)
+    
+        self.setupTrayIcon()
+
+    def startReminder(self):
+        self.reminderRunning.set(True)
         """Start the 20-20-20 rule reminder in a separate thread."""
-        threading.Thread(target=self.reminder_loop, daemon=True).start()
-        tk.messagebox.showinfo("Reminder Started", "A notification will be sent every 20 minutes.")
-        logging.info("20-20-20 reminder started.")
+        threading.Thread(target=self.reminderLoop, daemon=True).start()
+        self.reminderBtn.pack_forget()
+        self.stopReminderBtn.pack(pady=10)
+        tk.messagebox.showinfo("Reminder Started", f"A notification will be sent every {self.reminderTimeVar.get()} minutes.")
+        logging.info(f"Reminder started for {self.reminderTimeVar.get()} minutes.")
 
-    def reminder_loop(self):
-        while True:
-            time.sleep(1200) 
-            notify_user("20-20-20 Rule", "Look 20 feet away for 20 seconds!")
+    def stopReminder(self):
+        self.reminderRunning.set(False)
+        self.stopReminderBtn.pack_forget()
+        self.reminderBtn.pack(pady=10)
+        tk.messagebox.showinfo("Reminder Stopped", "Reminder has been successfully stopped.")
+        logging.info("Reminder stopped.")
+    
+    def reminderLoop(self):
+        logging.info("Reminder loop started.")
+        loopTime = self.reminderTimeVar.get() * 60
+        while self.reminderRunning.get() and loopTime > 0:
+            logging.info("Current loop time: " + str(loopTime))
+            time.sleep(30) 
+            loopTime -= 30
+            if loopTime <= 0:
+                notifyUser(self.reminderMessageText.get())
 
-    def setup_tray_icon(self):
+
+    def setupTrayIcon(self):
         """Setup system tray icon."""
-        icon_image = Image.open("assets/eye.webp")
-        self.tray_icon = pystray.Icon("EyeCareApp", icon_image, "Eye Care Reminder",
+        currentDir = os.path.dirname(__file__)
+        imagePath = os.path.join(currentDir, "assets", "eye.webp")
+        iconImage = Image.open(imagePath)
+        self.trayIcon = pystray.Icon("EyeCareApp", iconImage, "Eye Care Reminder",
                                       menu=pystray.Menu(
-                                          pystray.MenuItem("Show", self.show_window),
-                                          pystray.MenuItem("Exit", self.exit_app)
+                                          pystray.MenuItem("Show", self.showWindow),
+                                          pystray.MenuItem("Exit", self.exitApp)
                                       ))
-        threading.Thread(target=self.tray_icon.run, daemon=True).start()
+        threading.Thread(target=self.trayIcon.run, daemon=True).start()
 
-    def show_window(self, icon, item):
+    def showWindow(self, icon, item):
         """Restore window from system tray."""
         self.root.deiconify()
         logging.info("Window restored from system tray.")
 
-    def exit_app(self, icon=None, item=None):
+    def exitApp(self, icon=None, item=None):
         """Exit application."""
-        self.tray_icon.stop()
+        self.trayIcon.stop()
         self.root.quit()
         logging.info("Application exited.")
 

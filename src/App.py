@@ -10,6 +10,7 @@ import pystray
 import Utilities
 import os
 from PIL import Image
+import json
 
 logging.basicConfig(filename="eye_strain.log", level=logging.INFO,
                     format="%(asctime)s - %(levelname)s - %(message)s")
@@ -26,10 +27,27 @@ def notifyUser(title, message):
 
 class EyeCareApp:
     def __init__(self, root):
+        self.savedData = {}
+        self.initializeData()
         self.root = root
         self.root.title("Digital Eye Strain Helper")
         self.root.geometry("400x550")
 
+        self.reminderRunning = tk.BooleanVar()
+        self.reminderRunning.set(False)
+        self.detectActivity = tk.BooleanVar()
+        self.reminderTimeVar = tk.IntVar(value=20)
+        self.reminderMessageText = tk.StringVar()
+        self.reminderMessageText.set("20 minutes have passed. Look 20 feet away for 20 seconds!")
+        self.playSound = tk.BooleanVar()
+        self.uploadedSounds = [], []
+        self.currentSound = tk.StringVar()
+        if len(self.uploadedSounds[0]) > 0:
+            self.currentSound.set(self.uploadedSounds[0][0])
+        else:
+            self.currentSound.set("No sound has been selected.")
+
+        # UI Elements
         notebook = ttk.Notebook(root)
         self.home = tk.Frame(notebook)
         self.settings = tk.Frame(notebook)
@@ -40,20 +58,13 @@ class EyeCareApp:
         self.title = ttk.Label(self.home, text="Eye Care Reminder", font=("Arial", 14))
         self.title.pack(pady=10)
 
-        self.reminderRunning = tk.BooleanVar()
-        self.reminderRunning.set(False)
         self.reminderBtn = ttk.Button(self.home, text="Start Reminder", command=lambda: self.startReminder())
         self.reminderBtn.pack(pady=10)
 
         self.stopReminderBtn = ttk.Button(self.home, text="Stop Reminder", command=lambda: self.stopReminder())
 
-
-
         # Settings Page
-        self.detectActivity = tk.BooleanVar()
-        #self.detectActivity.set(0) update this to whatever value the user has set in their cached settings
-        
-        self.detectActivity.trace_add("write", self.listenForActivity)
+        self.detectActivity.trace_add("write", Utilities.listenForActivity)
         self.detectActivityToggle = ttk.Checkbutton(self.settings, text="Automatically start reminder when activity is detected", variable=self.detectActivity, command=lambda: Utilities.detectActivity(self))
         self.detectActivityToggle.pack(pady=10)
 
@@ -64,29 +75,17 @@ class EyeCareApp:
         self.checkValidIntegerAndBelow60Minutes = self.root.register(Utilities.validateIsIntegerAndBelow60Minutes)
         self.reminderTime.pack(pady=10)
 
-        self.reminderTimeVar = tk.IntVar(value=20)
         self.reminderTimeEntry = ttk.Entry(self.settings, textvariable=self.reminderTimeVar, validate="key", validatecommand=(self.checkValidIntegerAndBelow60Minutes, "%P"))
         self.reminderTimeEntry.pack(pady=10)
 
         self.reminderMessageLabel = ttk.Label(self.settings, text="Reminder Message", font=("Arial", 14))
         self.reminderMessageLabel.pack(pady=10)
 
-        self.reminderMessageText = tk.StringVar()
-        self.reminderMessageText.set("20 minutes have passed. Look 20 feet away for 20 seconds!")
         self.reminderMessage = ttk.Label(self.settings, textvariable=self.reminderMessageText)
         self.reminderMessage.pack(pady=10)
 
-        self.playSound = tk.BooleanVar()
         self.soundToggle = ttk.Checkbutton(self.settings, text="Play a Sound on Reminder", variable=self.playSound)
         self.soundToggle.pack(pady=10)
-
- 
-        self.uploadedSounds = [], []
-        self.currentSound = tk.StringVar()
-        if len(self.uploadedSounds[0]) > 0:
-            self.currentSound.set(self.uploadedSounds[0][0])
-        else:
-            self.currentSound.set("No sound has been selected.")
 
         self.currentSoundLabel = ttk.Label(self.settings, textvariable=self.currentSound)
         self.currentSoundLabel.pack(pady=10)
@@ -147,6 +146,35 @@ class EyeCareApp:
                                           pystray.MenuItem("Exit", self.exitApp)
                                       ))
         threading.Thread(target=self.trayIcon.run, daemon=True).start()
+
+    def initializeData(self):
+        currentDir = os.path.dirname(__file__)
+        configPath = os.path.join(currentDir, "config", "config.json")
+        try:
+            self.savedData = Utilities.loadData(configPath, self)
+        except Exception as e:
+            print(f"Error loading data: {e}")
+            self.savedData = self.defaultData()
+
+            if e.errno == 2: #Error number for when the directory does not exist
+                if os.path.exists(os.path.join(currentDir, "config")):
+                    with open(configPath, 'w') as file:
+                        json.dump(self.defaultData(), file)
+                else:
+                    os.makedirs(os.path.join(currentDir, "config"))
+
+                Utilities.saveData(configPath, self)
+            #elif e.errno == 26: #Error number for when the file does not exist
+
+    def defaultData(self):
+        return {
+            "reminderTime": 20,
+            "reminderMessage": "20 minutes have passed. Look 20 feet away for 20 seconds!",
+            "playSound": False,
+            "currentSound": "",
+            "uploadedSounds":  [[], []],
+            "detectActivity": False
+        }
 
     def showWindow(self, icon, item):
         """Restore window from system tray."""

@@ -2,6 +2,7 @@ from tkinter import ttk, filedialog
 import os
 from tkinter import messagebox
 import pynput
+import json
 
 def validateIsIntegerAndBelow60Minutes(input):
     if input == "":
@@ -67,3 +68,44 @@ def listenForActivity(self):
         listener = pynput.mouse.Listener(on_move=self.onMove)
         print("Listener started")
         listener.start()
+
+def saveData(filePath, self):
+    print('saving data', self.savedData)
+    with open(filePath, 'w') as file:
+        json.dump(self.savedData, file)
+
+def loadData(filePath, self):
+    with open(filePath, 'r') as file:
+        loadedData =  json.load(file)
+        print('loaded data', loadedData)
+        if validateData(loadedData):
+            return loadedData
+        else:
+            self.initializeData()
+
+
+def validateData(data):
+        expectedData = {
+            "reminderTime": int,
+            "reminderMessage": str,
+            "playSound": bool,
+            "currentSound": str,
+            "uploadedSounds": list,
+            "detectActivity": bool
+        }
+        try:
+            for key, expectedDataType in expectedData.items():
+                if key not in data:
+                    return False
+                if not isinstance(data[key], expectedDataType):
+                    return False
+            if not (0 < data['reminderTime'] <= 60):
+                print("reminderTime must be between 1 and 60")
+                return False
+
+        except:
+            messagebox.showerror("Error", "Data in config file is invalid. Resetting to default values.", parent=self.settings)
+            return False
+        return True
+
+  

@@ -64,7 +64,7 @@ class EyeCareApp:
         self.stopReminderBtn = ttk.Button(self.home, text="Stop Reminder", command=lambda: self.stopReminder())
 
         # Settings Page
-        self.detectActivity.trace_add("write", Utilities.listenForActivity)
+        self.detectActivity.trace_add("write", lambda *args: Utilities.listenForActivity(self))
         self.detectActivityToggle = ttk.Checkbutton(self.settings, text="Automatically start reminder when activity is detected", variable=self.detectActivity, command=lambda: Utilities.detectActivity(self))
         self.detectActivityToggle.pack(pady=10)
 
@@ -126,8 +126,10 @@ class EyeCareApp:
     
     def reminderLoop(self):
         logging.info("Reminder loop started.")
+        print("reminderLoop")
         loopTime = self.reminderTimeVar.get() * 60
         while self.reminderRunning.get() and loopTime > 0:
+            print("loop started")
             logging.info("Current loop time: " + str(loopTime))
             time.sleep(30) 
             loopTime -= 30

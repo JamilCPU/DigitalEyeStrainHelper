@@ -1,3 +1,4 @@
+import threading
 from tkinter import ttk, filedialog
 import os
 from tkinter import messagebox
@@ -54,26 +55,6 @@ def startReminderWhenActivityDetected(self):
 def detectActivity(self):
     if self.detectActivity.get() == 1:
         messagebox.showinfo("Info", "Reminder will automatically start when activity is detected.", parent=self.settings)
-
-
-
-def listenForActivity(self):
-    print("Listening for activity")
-    print('reminderRunning', self.reminderRunning.get(), 'detectActivity', self.detectActivity.get())
-    if not self.reminderRunning.get() and self.detectActivity.get() == 1:
-        def onMove(x, y):
-            if not self.reminderRunning.get():
-                print("Activity detected")
-                self.reminderRunning.set(True)
-                self.reminderLoop()
-                return False
-            return True
-        
-        listener = pynput.mouse.Listener(on_move=onMove)
-        print("Listener started")
-        listener.start()
-    else:
-        print("Listener not started")
 
 def saveData(filePath, self):
     print('saving data', self.savedData)

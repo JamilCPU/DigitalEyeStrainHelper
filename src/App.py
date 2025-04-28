@@ -25,7 +25,7 @@ class EyeCareApp:
         self.initializeData()
         self.root = root
         self.root.title("Digital Eye Strain Helper")
-        self.root.geometry("500x650")  # Made window slightly larger
+        self.root.geometry("500x750")  # Made window slightly larger
         
         # Configure the style
         self.style = tb.Style()
@@ -43,6 +43,9 @@ class EyeCareApp:
         self.playSound.set(self.savedData["playSound"])
         self.uploadedSounds = self.savedData["uploadedSounds"]
         self.currentSound = tk.StringVar()
+
+        print("xxx")
+        print(self.reminderTimeVar.get())
         if len(self.uploadedSounds[0]) > 0:
             self.currentSound.set(self.uploadedSounds[0][0])
         else:
@@ -224,10 +227,15 @@ class EyeCareApp:
             print("playing sound function")
             pygame.mixer.init()
             uploadedSoundPath = ""
-            for sound in self.uploadedSounds[0][0]:
+            print("sound list")
+            print(self.uploadedSounds)
+            print(self.uploadedSounds[0])
+            print(self.uploadedSounds[1])
+            for sound in self.uploadedSounds[0]:
                 if sound == self.currentSound.get():
-                    print(self.uploadedSounds[0][0].index(sound))
-                    uploadedSoundPath = self.uploadedSounds[0][1][self.uploadedSounds[0][0].index(sound)]
+                    print("sound found")
+                    print(self.uploadedSounds[0].index(sound))
+                    uploadedSoundPath = self.uploadedSounds[1][self.uploadedSounds[0].index(sound)]
             pygame.mixer.music.load(uploadedSoundPath)
             print(uploadedSoundPath)
             pygame.mixer.music.play()
@@ -266,7 +274,7 @@ class EyeCareApp:
     def defaultData(self):
         return {
             "reminderTime": 20,
-            "reminderMessage": f"{self.reminderTimeVar.get()} minutes have passed. Look 20 feet away for 20 seconds!",
+            "reminderMessage": "Look 20 feet away for 20 seconds!",
             "playSound": False,
             "currentSound": "",
             "uploadedSounds":  [[], []],

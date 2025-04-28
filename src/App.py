@@ -1,4 +1,3 @@
-from lib2to3 import pygram
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox

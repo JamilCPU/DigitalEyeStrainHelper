@@ -57,14 +57,12 @@ def detectActivity(self):
         messagebox.showinfo("Info", "Reminder will automatically start when activity is detected.", parent=self.settings)
 
 def saveData(filePath, self):
-    print('saving data', self.savedData)
     with open(filePath, 'w') as file:
         json.dump(self.savedData, file)
 
 def loadData(filePath, self):
     with open(filePath, 'r') as file:
         loadedData =  json.load(file)
-        print('loaded data', loadedData)
         if validateData(loadedData):
             return loadedData
         else:
@@ -87,11 +85,10 @@ def validateData(data):
                 if not isinstance(data[key], expectedDataType):
                     return False
             if not (0 < data['reminderTime'] <= 60):
-                print("reminderTime must be between 1 and 60")
                 return False
 
         except:
-            messagebox.showerror("Error", "Data in config file is invalid. Resetting to default values.", parent=self.settings)
+            messagebox.showerror("Error", "Data in config file is invalid. Resetting to default values.")
             return False
         return True
 

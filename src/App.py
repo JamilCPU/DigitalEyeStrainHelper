@@ -15,6 +15,7 @@ import os
 from PIL import Image
 import json
 import pygame
+import screen_brightness_control as sbc
 
 logging.basicConfig(filename="eye_strain.log", level=logging.INFO,
                     format="%(asctime)s - %(levelname)s - %(message)s")
@@ -23,11 +24,15 @@ class EyeCareApp:
     def __init__(self, root):
         self.savedData = {}
         self.initializeData()
+        ###
+        #In an attempt to make the application convenient for users,
+        #The application routinely saves user settings everytime the user closes the application.
+        #This is done to prevent the user from having to manually save their settings everytime upon use
+        #
         self.root = root
         self.root.title("Digital Eye Strain Helper")
-        self.root.geometry("500x750")  # Made window slightly larger
+        self.root.geometry("500x750")
         
-        # Configure the style
         self.style = tb.Style()
         self.style.configure('TLabel', font=('Helvetica', 11))
         self.style.configure('Heading.TLabel', font=('Helvetica', 16, 'bold'))
@@ -44,8 +49,6 @@ class EyeCareApp:
         self.uploadedSounds = self.savedData["uploadedSounds"]
         self.currentSound = tk.StringVar()
 
-        print("xxx")
-        print(self.reminderTimeVar.get())
         if len(self.uploadedSounds[0]) > 0:
             self.currentSound.set(self.uploadedSounds[0][0])
         else:
@@ -53,7 +56,6 @@ class EyeCareApp:
 
         self.root.protocol("WM_DELETE_WINDOW", self.exitApp)
 
-        # UI Elements with improved styling
         notebook = ttk.Notebook(self.root, style='primary.TNotebook')
         self.home = ttk.Frame(notebook, padding=20)
         self.settings = ttk.Frame(notebook, padding=20)
@@ -61,7 +63,6 @@ class EyeCareApp:
         notebook.add(self.settings, text="Settings")
         notebook.pack(expand=1, fill="both", padx=10, pady=5)
 
-        # Home Page
         self.title = ttk.Label(self.home, text="Eye Care Reminder", style='Heading.TLabel')
         self.title.pack(pady=20)
 
@@ -74,6 +75,22 @@ class EyeCareApp:
                                         style='danger.TButton',
                                         command=lambda: self.stopReminder())
 
+        self.brightnessFrame = ttk.LabelFrame(self.home, text="Brightness Settings", padding=10)
+        self.brightnessFrame.pack(fill='x', padx=5, pady=10)
+
+        self.brightnessValue = tk.IntVar(value=self.savedData["brightness"])
+        self.brightnessLabel = ttk.Label(self.brightnessFrame, text="Screen Brightness:")
+        self.brightnessLabel.pack(pady=5)
+
+        self.brightnessSlider = ttk.Scale(self.brightnessFrame, from_=0, to=100, variable=self.brightnessValue, command=self.updateBrightness, orient=HORIZONTAL, length=200)
+        self.brightnessSlider.pack(pady=5)
+
+        self.brightnessPercentage = ttk.Label(self.brightnessFrame, 
+                                             text="100%",
+                                             style='primary.TLabel')
+        self.brightnessPercentage.pack(pady=5)
+        
+        
         # Settings Page
         self.detectActivity.trace_add("write", lambda *args: self.listenForActivity())
         self.detectActivityToggle = ttk.Checkbutton(self.settings, 
@@ -85,7 +102,6 @@ class EyeCareApp:
         self.settingsTitle = ttk.Label(self.settings, text="Settings", style='Heading.TLabel')
         self.settingsTitle.pack(pady=15)
 
-        # Reminder Time Frame
         time_frame = ttk.LabelFrame(self.settings, text="Reminder Interval", padding=10)
         time_frame.pack(fill='x', padx=5, pady=10)
         
@@ -112,7 +128,6 @@ class EyeCareApp:
                                        width=50)
         self.reminderMessage.pack(pady=5)
 
-        # Sound Frame
         sound_frame = ttk.LabelFrame(self.settings, text="Sound Settings", padding=10)
         sound_frame.pack(fill='x', padx=5, pady=10)
         
@@ -175,8 +190,6 @@ class EyeCareApp:
     
     def reminderLoop(self):
         logging.info("Reminder loop started.")
-        print("reminderLoop")
-        print("loop started")
         while self.reminderRunning.get():
             loopTime = self.reminderTimeVar.get() * 60
             while loopTime > 0 and self.reminderRunning.get():
@@ -188,32 +201,29 @@ class EyeCareApp:
 
 
     def listenForActivity(self):
-        print("Listening for activity")
-        print('reminderRunning', self.reminderRunning.get(), 'detectActivity', self.detectActivity.get())
         if not self.reminderRunning.get() and self.detectActivity.get() == 1:
-            print("condition met")
             listenerThread = threading.Thread(target=self.startListener)
             listenerThread.daemon = True  # Allows the program to exit even if the thread is running
             listenerThread.start()
-        else:
-            print("Listener not started")
 
     def startListener(self):
-        print("Starting listener")
         listener = pynput.mouse.Listener(on_move=self.onMove)
         listener.start()
-        print("Listener started")
 
 
     def onMove(self, x, y):
         if not self.reminderRunning.get():
-            print("Activity detected")
             self.reminderRunning.set(True)
             self.reminderBtn.pack_forget()
             self.stopReminderBtn.pack(pady=10)
             self.reminderLoop()
             return False
         return True
+
+    def updateBrightness(self, event):
+        self.brightnessPercentage.config(text=f"{self.brightnessValue.get()}%")
+        sbc.set_brightness(self.brightnessValue.get())
+
 
     def notifyUser(self, message):
         """Notification to the user"""
@@ -224,20 +234,12 @@ class EyeCareApp:
             timeout=10
         )
         if self.playSound.get() and self.currentSound.get() != "":
-            print("playing sound function")
             pygame.mixer.init()
             uploadedSoundPath = ""
-            print("sound list")
-            print(self.uploadedSounds)
-            print(self.uploadedSounds[0])
-            print(self.uploadedSounds[1])
             for sound in self.uploadedSounds[0]:
                 if sound == self.currentSound.get():
-                    print("sound found")
-                    print(self.uploadedSounds[0].index(sound))
                     uploadedSoundPath = self.uploadedSounds[1][self.uploadedSounds[0].index(sound)]
             pygame.mixer.music.load(uploadedSoundPath)
-            print(uploadedSoundPath)
             pygame.mixer.music.play()
         logging.info(f"Notification sent: {message}")
 
@@ -259,7 +261,6 @@ class EyeCareApp:
         try:
             self.savedData = Utilities.loadData(configPath, self)
         except Exception as e:
-            print(f"Error loading data: {e}")
             self.savedData = self.defaultData()
 
             if e.errno == 2: #Error number for when the directory does not exist
@@ -278,7 +279,8 @@ class EyeCareApp:
             "playSound": False,
             "currentSound": "",
             "uploadedSounds":  [[], []],
-            "detectActivity": False
+            "detectActivity": False,
+            "brightness": 100
         }
 
     def showWindow(self, icon, item):
@@ -296,8 +298,6 @@ class EyeCareApp:
         self.savedData["currentSound"] = self.currentSound.get()
         self.savedData["uploadedSounds"] = self.uploadedSounds
         self.savedData["detectActivity"] = self.detectActivity.get()
-        print("closing app")
-        print(self.savedData)
         with open(configPath, 'w') as file:
             json.dump(self.savedData, file)
         self.trayIcon.stop()

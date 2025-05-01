@@ -5,7 +5,7 @@ from tkinter import messagebox
 import pynput
 import json
 
-def validateIsIntegerAndBelow60Minutes(input):
+def validateIsIntegerAndBelow60Minutes(input):#logic for validating the reminder time
     if input == "":
         return True
     if input.isdigit():
@@ -16,15 +16,15 @@ def validateIsIntegerAndBelow60Minutes(input):
     else:
         return False
 
-def uploadSound(self):
-    filePath = filedialog.askopenfilename(filetypes=[("Sound Files", "*.wav *.mp3")])
+def uploadSound(self):#logic for uploading a sound
+    filePath = filedialog.askopenfilename(filetypes=[("Sound Files", "*.wav *.mp3")])#only certain file types can be uploaded
     fileName = os.path.basename(filePath)
-    if filePath and filePath not in self.uploadedSounds[1]:
+    if filePath and filePath not in self.uploadedSounds[1]:#placed into uploadedsounds list
         self.uploadedSounds[0].append(fileName)
         self.uploadedSounds[1].append(filePath)
         self.uploadedSoundsMenu['values'] = self.uploadedSounds[0]
         if '!disabled' not in self.uploadedSoundsMenu.state():
-            self.uploadedSoundsMenu.state(['!disabled'])#enable the menu
+            self.uploadedSoundsMenu.state(['!disabled'])#enable the menu    
 
         self.uploadedSoundsMenu.set(fileName)
         
@@ -57,21 +57,19 @@ def detectActivity(self):
         messagebox.showinfo("Info", "Reminder will automatically start when activity is detected.", parent=self.settings)
 
 def saveData(filePath, self):
-    print('saving data', self.savedData)
     with open(filePath, 'w') as file:
         json.dump(self.savedData, file)
 
 def loadData(filePath, self):
     with open(filePath, 'r') as file:
         loadedData =  json.load(file)
-        print('loaded data', loadedData)
         if validateData(loadedData):
             return loadedData
         else:
             self.initializeData()
 
 
-def validateData(data):
+def validateData(data):#basic validation to ensure data integrity
         expectedData = {
             "reminderTime": int,
             "reminderMessage": str,
@@ -87,11 +85,10 @@ def validateData(data):
                 if not isinstance(data[key], expectedDataType):
                     return False
             if not (0 < data['reminderTime'] <= 60):
-                print("reminderTime must be between 1 and 60")
                 return False
 
         except:
-            messagebox.showerror("Error", "Data in config file is invalid. Resetting to default values.", parent=self.settings)
+            messagebox.showerror("Error", "Data in config file is invalid. Resetting to default values.")
             return False
         return True
 

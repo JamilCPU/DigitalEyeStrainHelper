@@ -63,6 +63,7 @@ class EyeCareApp:
         notebook.add(self.settings, text="Settings")
         notebook.pack(expand=1, fill="both", padx=10, pady=5)
         #all following elements are children of the home tab
+        #product theming and color
         self.title = ttk.Label(self.home, text="Eye Care Reminder", style='Heading.TLabel')
         self.title.pack(pady=20)
 

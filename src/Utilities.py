@@ -5,7 +5,7 @@ from tkinter import messagebox
 import pynput
 import json
 
-def validateIsIntegerAndBelow60Minutes(input):
+def validateIsIntegerAndBelow60Minutes(input):#logic for validating the reminder time
     if input == "":
         return True
     if input.isdigit():
@@ -16,15 +16,15 @@ def validateIsIntegerAndBelow60Minutes(input):
     else:
         return False
 
-def uploadSound(self):
-    filePath = filedialog.askopenfilename(filetypes=[("Sound Files", "*.wav *.mp3")])
+def uploadSound(self):#logic for uploading a sound
+    filePath = filedialog.askopenfilename(filetypes=[("Sound Files", "*.wav *.mp3")])#only certain file types can be uploaded
     fileName = os.path.basename(filePath)
-    if filePath and filePath not in self.uploadedSounds[1]:
+    if filePath and filePath not in self.uploadedSounds[1]:#placed into uploadedsounds list
         self.uploadedSounds[0].append(fileName)
         self.uploadedSounds[1].append(filePath)
         self.uploadedSoundsMenu['values'] = self.uploadedSounds[0]
         if '!disabled' not in self.uploadedSoundsMenu.state():
-            self.uploadedSoundsMenu.state(['!disabled'])#enable the menu
+            self.uploadedSoundsMenu.state(['!disabled'])#enable the menu    
 
         self.uploadedSoundsMenu.set(fileName)
         
@@ -69,7 +69,7 @@ def loadData(filePath, self):
             self.initializeData()
 
 
-def validateData(data):
+def validateData(data):#basic validation to ensure data integrity
         expectedData = {
             "reminderTime": int,
             "reminderMessage": str,

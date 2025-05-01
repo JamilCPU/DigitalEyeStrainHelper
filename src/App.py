@@ -67,12 +67,16 @@ class EyeCareApp:
         self.title = ttk.Label(self.home, text="Eye Care Reminder", style='Heading.TLabel')
         self.title.pack(pady=20)
 
-        self.reminderBtn = ttk.Button(self.home, text="Start Reminder", 
+        # Create a dedicated frame for reminder buttons
+        self.reminderButtonFrame = ttk.Frame(self.home)
+        self.reminderButtonFrame.pack(pady=10)
+
+        self.reminderBtn = ttk.Button(self.reminderButtonFrame, text="Start Reminder", 
                                     style='success.TButton',
                                     command=lambda: self.startReminder())
-        self.reminderBtn.pack(pady=20)
+        self.reminderBtn.pack(pady=10)
 
-        self.stopReminderBtn = ttk.Button(self.home, text="Stop Reminder", 
+        self.stopReminderBtn = ttk.Button(self.reminderButtonFrame, text="Stop Reminder", 
                                         style='danger.TButton',
                                         command=lambda: self.stopReminder())
 

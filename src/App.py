@@ -223,7 +223,11 @@ class EyeCareApp:
 
     def updateBrightness(self, event):
         self.brightnessPercentage.config(text=f"{self.brightnessValue.get()}%")
-        sbc.set_brightness(self.brightnessValue.get())#sets the brightness to the value of the slider
+        try:
+            sbc.set_brightness(self.brightnessValue.get())  # sets the brightness to the value of the slider
+        except Exception as e:
+            logging.warning(f"Failed to update brightness: {str(e)}")
+            # Don't show error to user as this is non-critical functionality
 
 
     def notifyUser(self, message):#this is the actual notification that runs after the reminder

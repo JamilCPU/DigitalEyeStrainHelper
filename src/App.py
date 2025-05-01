@@ -197,7 +197,7 @@ class EyeCareApp:
                 logging.info("Current loop time: " + str(loopTime))
                 time.sleep(30) #done for logging purposes
                 loopTime -= 30
-                if loopTime <= 0:
+                if loopTime <= 0 and self.reminderRunning.get():
                     self.notifyUser(self.reminderMessageText.get())
 
 

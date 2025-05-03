@@ -1,13 +1,7 @@
 pygame
 pynput
 plyer
-pillow
+Pillow
+pystray
 ttkbootstrap
 screen-brightness-control
-pystray
-ttkbootstrap.constants
-Utilities
-json
-logging
-tkinter
-  

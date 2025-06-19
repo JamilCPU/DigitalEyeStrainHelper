@@ -25,11 +25,12 @@ def uploadSound(self):#logic for uploading a sound
         self.uploadedSoundsMenu['values'] = self.uploadedSounds[0]
         if '!disabled' not in self.uploadedSoundsMenu.state():
             self.uploadedSoundsMenu.state(['!disabled'])#enable the menu    
-
+  
         self.uploadedSoundsMenu.set(fileName)
         
 def setSound(self, sound):
     self.currentSound.set(sound)
+    self.soundToggle.state(['!disabled'])
 
 def deleteCurrentSound(self):
     try:
@@ -43,6 +44,7 @@ def deleteCurrentSound(self):
         if len(self.uploadedSoundsMenu['values']) == 0:
             self.uploadedSoundsMenu.set("")
             self.uploadedSoundsMenu.state(['disabled'])
+            self.soundToggle.state(['disabled'])
         else:
             self.uploadedSoundsMenu.set(self.uploadedSounds[0][0])
     except:

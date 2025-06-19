@@ -80,6 +80,11 @@ class EyeCareApp:
                                         style='danger.TButton',
                                         command=lambda: self.stopReminder())
 
+        self.testReminderBtn = ttk.Button(self.reminderButtonFrame, text="Test Reminder", 
+                                        style='info.TButton',
+                                        command=lambda: self.notifyUser(self.reminderMessageText.get()))
+        self.testReminderBtn.pack(pady=10)
+
         self.brightnessFrame = ttk.LabelFrame(self.home, text="Brightness Settings", padding=10)
         self.brightnessFrame.pack(fill='x', padx=5, pady=10)
 
@@ -141,6 +146,8 @@ class EyeCareApp:
                                           style='primary.TCheckbutton',
                                           variable=self.playSound)
         self.soundToggle.pack(pady=5)
+        if self.currentSound.get() == "No sound has been selected.":
+            self.soundToggle.state(['disabled'])
 
         self.currentSoundLabel = ttk.Label(sound_frame, textvariable=self.currentSound)
         self.currentSoundLabel.pack(pady=5)

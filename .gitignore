@@ -34,3 +34,19 @@ wheels/
 # OS
 .DS_Store
 Thumbs.db 
+.env
+.env.*
+!.env.example
+*.keys
+*.db
+*.sqlite
+*.sqlite3
+*.pyc
+node_modules/
+bin/
+obj/
+.vs/
+*.class
+target/
+*.log
+src/config/
